@@ -13,7 +13,7 @@ interface PaymentScreenProps {
   onBack: () => void;
 }
 
-const PIX_KEY = "23.428.941/0001-26";
+const PIX_KEY = "semeandofamilia@gmail.com";
 const SUPPORT_PHONE = "(22) 98851-6911";
 const EVENT_VALUE = 70;
 
@@ -24,7 +24,7 @@ const PaymentScreen = ({ registration, onBack }: PaymentScreenProps) => {
   };
 
   // Generate PIX code for QR
-  const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${PIX_KEY.replace(/[^\d]/g, "")}5204000053039865406${EVENT_VALUE.toFixed(2)}5802BR5925IGREJA EVANG SEMEANDO FAM6015SAO PEDRO ALDEI62070503***6304`;
+  const pixPayload = `00020126470014BR.GOV.BCB.PIX0125semeandofamilia@gmail.com520400005303986540570.005802BR5901N6001C62110507CORRIDA63044507`;
 
   return (
     <section className="min-h-screen bg-muted py-8 md:py-16">
