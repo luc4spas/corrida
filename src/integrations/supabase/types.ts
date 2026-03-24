@@ -24,6 +24,7 @@ export type Database = {
           status_pagamento: string
           tamanho_camisa: string
           updated_at: string
+          whatsapp: string
         }
         Insert: {
           created_at?: string
@@ -34,6 +35,7 @@ export type Database = {
           status_pagamento?: string
           tamanho_camisa: string
           updated_at?: string
+          whatsapp: string
         }
         Update: {
           created_at?: string
@@ -44,6 +46,7 @@ export type Database = {
           status_pagamento?: string
           tamanho_camisa?: string
           updated_at?: string
+          whatsapp?: string
         }
         Relationships: []
       }
