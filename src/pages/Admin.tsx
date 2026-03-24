@@ -5,20 +5,38 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Users, DollarSign, Filter, LogOut, RefreshCw } from "lucide-react";
+import { Users, DollarSign, Filter, LogOut, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type Inscricao = {
   id: string;
   nome: string;
-  whatsapp:string;
+  whatsapp: string;
   sexo: "M" | "F";
   idade: number;
   tamanho_camisa: "P" | "M" | "G";
   status_pagamento: "pendente" | "pago";
   created_at: string;
   updated_at: string;
+};
+
+type EditForm = {
+  nome: string;
+  whatsapp: string;
+  sexo: "M" | "F";
+  idade: string;
+  tamanho_camisa: "P" | "M" | "G";
+  status_pagamento: "pendente" | "pago";
 };
 
 const Admin = () => {
@@ -30,13 +48,26 @@ const Admin = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Modal de edição
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Inscricao | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Modal de exclusão
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Inscricao | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     checkAuth();
     fetchInscricoes();
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
     }
@@ -68,6 +99,77 @@ const Admin = () => {
       toast.error("Erro ao atualizar status");
     } else {
       toast.success(`Status atualizado para ${status}`);
+      fetchInscricoes();
+    }
+  };
+
+  // ── EDITAR ──────────────────────────────────────────────
+  const openEdit = (inscricao: Inscricao) => {
+    setEditTarget(inscricao);
+    setEditForm({
+      nome: inscricao.nome,
+      whatsapp: inscricao.whatsapp,
+      sexo: inscricao.sexo,
+      idade: String(inscricao.idade),
+      tamanho_camisa: inscricao.tamanho_camisa,
+      status_pagamento: inscricao.status_pagamento,
+    });
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTarget || !editForm) return;
+
+    const idadeNum = parseInt(editForm.idade);
+    if (!editForm.nome.trim()) return toast.error("Nome é obrigatório");
+    if (isNaN(idadeNum) || idadeNum <= 0) return toast.error("Idade inválida");
+
+    setSaving(true);
+    const { error } = await supabase
+      .from("inscricoes" as any)
+      .update({
+        nome: editForm.nome.trim(),
+        whatsapp: editForm.whatsapp.trim(),
+        sexo: editForm.sexo,
+        idade: idadeNum,
+        tamanho_camisa: editForm.tamanho_camisa,
+        status_pagamento: editForm.status_pagamento,
+      })
+      .eq("id", editTarget.id);
+
+    setSaving(false);
+
+    if (error) {
+      toast.error("Erro ao salvar alterações");
+    } else {
+      toast.success("Inscrição atualizada com sucesso!");
+      setEditOpen(false);
+      fetchInscricoes();
+    }
+  };
+
+  // ── EXCLUIR ─────────────────────────────────────────────
+  const openDelete = (inscricao: Inscricao) => {
+    setDeleteTarget(inscricao);
+    setDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    setDeleting(true);
+    const { error } = await supabase
+      .from("inscricoes" as any)
+      .delete()
+      .eq("id", deleteTarget.id);
+
+    setDeleting(false);
+
+    if (error) {
+      toast.error("Erro ao excluir inscrição");
+    } else {
+      toast.success(`Inscrição de ${deleteTarget.nome} excluída`);
+      setDeleteOpen(false);
       fetchInscricoes();
     }
   };
@@ -213,19 +315,20 @@ const Admin = () => {
                 <TableHead className="font-display font-semibold">Idade</TableHead>
                 <TableHead className="font-display font-semibold">Camisa</TableHead>
                 <TableHead className="font-display font-semibold">Status</TableHead>
-                <TableHead className="font-display font-semibold">Ações</TableHead>
+                <TableHead className="font-display font-semibold">Pagamento</TableHead>
+                <TableHead className="font-display font-semibold text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredInscricoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                     Nenhuma inscrição encontrada
                   </TableCell>
                 </TableRow>
@@ -270,6 +373,28 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          onClick={() => openEdit(inscricao)}
+                          title="Editar inscrição"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => openDelete(inscricao)}
+                          title="Excluir inscrição"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -281,6 +406,141 @@ const Admin = () => {
           Mostrando {filteredInscricoes.length} de {totalInscritos} inscrições
         </p>
       </main>
+
+      {/* ── MODAL DE EDIÇÃO ── */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Inscrição</DialogTitle>
+            <DialogDescription>
+              Altere os dados da inscrição e clique em Salvar para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editForm && (
+            <div className="grid gap-4 py-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-nome">Nome</Label>
+                <Input
+                  id="edit-nome"
+                  value={editForm.nome}
+                  onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
+                />
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="edit-whatsapp">WhatsApp</Label>
+                <Input
+                  id="edit-whatsapp"
+                  value={editForm.whatsapp}
+                  onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-1.5">
+                  <Label>Sexo</Label>
+                  <Select
+                    value={editForm.sexo}
+                    onValueChange={(v) => setEditForm({ ...editForm, sexo: v as "M" | "F" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="edit-idade">Idade</Label>
+                  <Input
+                    id="edit-idade"
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={editForm.idade}
+                    onChange={(e) => setEditForm({ ...editForm, idade: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-1.5">
+                  <Label>Tamanho da Camisa</Label>
+                  <Select
+                    value={editForm.tamanho_camisa}
+                    onValueChange={(v) =>
+                      setEditForm({ ...editForm, tamanho_camisa: v as "P" | "M" | "G" })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="P">P</SelectItem>
+                      <SelectItem value="M">M</SelectItem>
+                      <SelectItem value="G">G</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label>Status do Pagamento</Label>
+                  <Select
+                    value={editForm.status_pagamento}
+                    onValueChange={(v) =>
+                      setEditForm({ ...editForm, status_pagamento: v as "pendente" | "pago" })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="pago">Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── MODAL DE EXCLUSÃO ── */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir Inscrição</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir a inscrição de{" "}
+              <span className="font-semibold text-foreground">{deleteTarget?.nome}</span>? Esta ação
+              não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleting}>
+              {deleting ? "Excluindo..." : "Sim, excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
