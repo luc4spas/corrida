@@ -76,7 +76,7 @@ const Admin = () => {
   const fetchInscricoes = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("inscricoes" as any)
+      .from("inscricoes")
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -91,7 +91,7 @@ const Admin = () => {
 
   const updatePaymentStatus = async (id: string, status: "pendente" | "pago") => {
     const { error } = await supabase
-      .from("inscricoes" as any)
+      .from("inscricoes")
       .update({ status_pagamento: status })
       .eq("id", id);
 
@@ -126,7 +126,7 @@ const Admin = () => {
 
     setSaving(true);
     const { error } = await supabase
-      .from("inscricoes" as any)
+      .from("inscricoes")
       .update({
         nome: editForm.nome.trim(),
         whatsapp: editForm.whatsapp.trim(),
@@ -159,7 +159,7 @@ const Admin = () => {
 
     setDeleting(true);
     const { error } = await supabase
-      .from("inscricoes" as any)
+      .from("inscricoes")
       .delete()
       .eq("id", deleteTarget.id);
 
