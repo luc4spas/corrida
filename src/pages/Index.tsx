@@ -1,72 +1,44 @@
-import { useState } from "react";
 import HeroSection from "@/components/HeroSection";
 import EventDetails from "@/components/EventDetails";
-import RegistrationForm from "@/components/RegistrationForm";
-import PaymentScreen from "@/components/PaymentScreen";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
-type RegistrationData = {
-  nome: string;
-  whatsapp: string;
-  sexo: "M" | "F";
-  idade: number;
-  tamanho_camisa: "P" | "M" | "G";
-};
+import { XCircle } from "lucide-react";
 
 const Index = () => {
-  const [step, setStep] = useState<"home" | "payment">("home");
-  const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null);
-
-  const scrollToForm = () => {
-    const form = document.getElementById("inscricao");
-    if (form) {
-      form.scrollIntoView({ behavior: "smooth" });
+  const scrollToClosed = () => {
+    const el = document.getElementById("inscricoes-encerradas");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
     }
   };
-
-  const handleRegistration = async (data: RegistrationData) => {
-    try {
-      const { error } = await supabase.from("inscricoes" as any).insert({
-        nome: data.nome,
-        whatsapp: data.whatsapp,
-        sexo: data.sexo,
-        idade: data.idade,
-        tamanho_camisa: data.tamanho_camisa,
-        status_pagamento: "pendente",
-      });
-
-      if (error) {
-        console.error("Erro ao salvar inscrição:", error);
-        toast.error("Erro ao processar inscrição. Tente novamente.");
-        return;
-      }
-
-      setRegistrationData(data);
-      setStep("payment");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      toast.success("Inscrição registrada com sucesso!");
-    } catch (err) {
-      console.error("Erro:", err);
-      toast.error("Erro ao processar inscrição. Tente novamente.");
-    }
-  };
-
-  const handleNewRegistration = () => {
-    setStep("home");
-    setRegistrationData(null);
-  };
-
-  if (step === "payment" && registrationData) {
-    return <PaymentScreen registration={registrationData} onBack={handleNewRegistration} />;
-  }
 
   return (
     <main className="min-h-screen">
-      <HeroSection onRegisterClick={scrollToForm} />
+      <HeroSection onRegisterClick={scrollToClosed} />
       <EventDetails />
-      <RegistrationForm onSubmit={handleRegistration} />
-      
+
+      {/* Inscrições Encerradas */}
+      <section id="inscricoes-encerradas" className="bg-muted py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-xl rounded-2xl bg-card p-8 text-center shadow-card md:p-12">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+              <XCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">
+              Inscrições <span className="text-gradient-secondary">Encerradas</span>
+            </h2>
+            <p className="mt-4 text-base text-muted-foreground md:text-lg">
+              As inscrições para a 2ª Corrida Rústica Semeando foram encerradas.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Agradecemos a todos os participantes! Nos vemos no dia 24 de Maio às 08h
+              em frente à Igreja Evangélica Semeando Família.
+            </p>
+            <p className="mt-6 text-sm font-medium text-foreground">
+              Dúvidas? Entre em contato: <span className="text-primary">(22) 98851-6911</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-foreground py-8 text-center text-primary-foreground/70">
         <div className="container mx-auto px-4">
